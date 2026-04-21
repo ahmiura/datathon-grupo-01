@@ -1,0 +1,9 @@
+apiVersion: 1
+
+providers:
+  - name: 'MLOps Dashboards'
+    orgId: 1
+    folder: 'Datathon API'
+    type: file
+    options:
+      path: /etc/grafana/dashboards

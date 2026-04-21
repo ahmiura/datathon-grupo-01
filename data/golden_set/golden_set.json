@@ -1,0 +1,152 @@
+[
+  {
+    "query": "Qual a previsão do modelo LSTM para PETR4.SA amanhã?",
+    "expected_answer": "A previsão do modelo LSTM para o próximo fechamento da PETR4.SA é de aproximadamente R$ 35,00 (valor varia conforme inferência).",
+    "answer": "A previsão da nossa IA (LSTM) para o próximo fechamento da PETR4.SA é de R$ 35.12.",
+    "contexts": ["O modelo preditivo indicou o valor de 35.12 com base nos últimos 60 dias da PETR4.SA."]
+  },
+  {
+    "query": "Qual o preço atual da VALE3.SA na bolsa?",
+    "expected_answer": "O preço atual da VALE3.SA é buscado em tempo real no Yahoo Finance.",
+    "answer": "O preço atual de VALE3.SA na bolsa é R$ 62.45.",
+    "contexts": ["Histórico da VALE3.SA no dia atual retornou o valor de fechamento de 62.45."]
+  },
+  {
+    "query": "Qual foi a política de distribuição de dividendos do último trimestre divulgada pela empresa?",
+    "expected_answer": "A empresa anunciou a distribuição de 45% do lucro líquido ajustado em dividendos para o último trimestre.",
+    "answer": "Segundo o relatório financeiro, a política de dividendos prevê o pagamento de 45% do lucro líquido ajustado.",
+    "contexts": ["A política de remuneração aos acionistas aprovada pelo Conselho prevê a distribuição de 45% do lucro líquido ajustado do último trimestre como dividendos."]
+  },
+  {
+    "query": "Se eu comprar 100 ações da ITUB4.SA a R$ 32,50, qual será o valor total investido?",
+    "expected_answer": "O valor total investido seria de R$ 3.250,00.",
+    "answer": "Multiplicando 100 ações por R$ 32,50, o valor total investido é R$ 3250.0.",
+    "contexts": []
+  },
+  {
+    "query": "O relatório interno menciona riscos associados a fatores climáticos?",
+    "expected_answer": "Sim, o relatório menciona que mudanças nas regulamentações ambientais e fatores climáticos extremos representam riscos de longo prazo.",
+    "answer": "Sim, os documentos internos indicam que os fatores climáticos e novas regulamentações representam riscos significativos.",
+    "contexts": ["Seção 4: Riscos e Incertezas. Fatores climáticos extremos e o aumento das regulamentações ambientais foram listados como riscos estratégicos de longo prazo."]
+  },
+  {
+    "query": "Qual foi o EBITDA ajustado no último relatório?",
+    "expected_answer": "O EBITDA ajustado foi de R$ 15 bilhões, um aumento de 5% em relação ao ano anterior.",
+    "answer": "O EBITDA ajustado reportado foi de R$ 15 bilhões.",
+    "contexts": ["O EBITDA ajustado atingiu R$ 15 bilhões no 4T23, representando um crescimento de 5% ano-a-ano, impulsionado pela eficiência operacional."]
+  },
+  {
+    "query": "Se a ação saiu de 34.50 para 36.20, qual foi a variação percentual?",
+    "expected_answer": "A variação percentual foi de aproximadamente 4.93%.",
+    "answer": "O resultado do cálculo (36.20 - 34.50) / 34.50 * 100 é 4.927536...",
+    "contexts": []
+  },
+  {
+    "query": "Me dê o preço atual da MGLU3.SA",
+    "expected_answer": "O preço atual da MGLU3.SA é buscado em tempo real.",
+    "answer": "O preço atual de MGLU3.SA na bolsa é R$ 12.50.",
+    "contexts": ["Histórico da MGLU3.SA no dia atual retornou o valor de fechamento de 12.50."]
+  },
+  {
+    "query": "Como está a dívida líquida da companhia?",
+    "expected_answer": "A dívida líquida da companhia foi reduzida em 10% no último ano, chegando a R$ 50 bilhões.",
+    "answer": "De acordo com o balanço, a dívida líquida foi reduzida para R$ 50 bilhões.",
+    "contexts": ["A gestão de passivos resultou em uma redução de 10% da dívida líquida, que encerrou o período em R$ 50 bilhões."]
+  },
+  {
+    "query": "Qual a previsão de preço para a PETR4 amanhã?",
+    "expected_answer": "A previsão do modelo LSTM para o próximo fechamento da PETR4.SA é de um valor específico.",
+    "answer": "A previsão da nossa IA (LSTM) para o próximo fechamento da PETR4.SA é de R$ 35.18.",
+    "contexts": ["O modelo preditivo indicou o valor de 35.18 com base nos últimos 60 dias da PETR4.SA."]
+  },
+  {
+    "query": "Quanto é 150 * 35.18?",
+    "expected_answer": "O resultado é 5277.",
+    "answer": "O resultado do cálculo 150 * 35.18 é 5277.0.",
+    "contexts": []
+  },
+  {
+    "query": "Qual a cotação da BBDC4.SA?",
+    "expected_answer": "O preço atual da BBDC4.SA é buscado em tempo real.",
+    "answer": "O preço atual de BBDC4.SA na bolsa é R$ 12.80.",
+    "contexts": ["Histórico da BBDC4.SA no dia atual retornou o valor de fechamento de 12.80."]
+  },
+  {
+    "query": "Quais são os principais concorrentes mencionados no relatório anual?",
+    "expected_answer": "Os principais concorrentes mencionados são a Empresa A e a Empresa B, que atuam no mesmo segmento de mercado.",
+    "answer": "O relatório anual cita a Empresa A e a Empresa B como seus principais concorrentes no setor.",
+    "contexts": ["Na seção de Análise de Mercado, a companhia identifica a Empresa A e a Empresa B como seus principais concorrentes diretos."]
+  },
+  {
+    "query": "Se eu investir R$ 10.000 em ações de R$ 50, quantas ações consigo comprar?",
+    "expected_answer": "Você consegue comprar 200 ações.",
+    "answer": "O resultado do cálculo 10000 / 50 é 200.0.",
+    "contexts": []
+  },
+  {
+    "query": "O documento fala sobre iniciativas ESG?",
+    "expected_answer": "Sim, o relatório de sustentabilidade detalha as iniciativas ESG, incluindo a redução da emissão de carbono e projetos sociais.",
+    "answer": "Sim, o relatório de sustentabilidade menciona um plano para reduzir as emissões de carbono em 20% até 2030 e investimentos em projetos sociais.",
+    "contexts": ["Nosso compromisso ESG inclui a meta de redução de 20% nas emissões de carbono até 2030 e um programa de investimento em comunidades locais."]
+  },
+  {
+    "query": "Preço da ABEV3.SA, por favor.",
+    "expected_answer": "O preço atual da ABEV3.SA é buscado em tempo real.",
+    "answer": "O preço atual de ABEV3.SA na bolsa é R$ 12.15.",
+    "contexts": ["Histórico da ABEV3.SA no dia atual retornou o valor de fechamento de 12.15."]
+  },
+  {
+    "query": "Qual foi o CAPEX (investimento em capital) do último ano?",
+    "expected_answer": "O CAPEX do último ano foi de R$ 5 bilhões, focado na expansão da capacidade produtiva.",
+    "answer": "O investimento em capital (CAPEX) totalizou R$ 5 bilhões, direcionado principalmente para a modernização de fábricas.",
+    "contexts": ["O total de CAPEX executado no ano fiscal foi de R$ 5 bilhões, com 70% alocado para a expansão da capacidade produtiva."]
+  },
+  {
+    "query": "Qual a média de preço entre 32.50, 33.10 e 32.80?",
+    "expected_answer": "A média de preço é R$ 32.80.",
+    "answer": "O resultado do cálculo (32.50 + 33.10 + 32.80) / 3 é 32.8.",
+    "contexts": []
+  },
+  {
+    "query": "O relatório menciona algum risco regulatório novo?",
+    "expected_answer": "Sim, o relatório aponta um novo risco regulatório relacionado a leis de proteção de dados que podem impactar as operações.",
+    "answer": "Sim, um novo risco sobre a legislação de proteção de dados foi identificado como um fator de atenção para o próximo ano.",
+    "contexts": ["Fatores de Risco: A nova legislação de proteção de dados representa um risco regulatório emergente, com potencial impacto em nossas operações de marketing."]
+  },
+  {
+    "query": "Qual o valor da ação SUZB3.SA?",
+    "expected_answer": "O preço atual da SUZB3.SA é buscado em tempo real.",
+    "answer": "O preço atual de SUZB3.SA na bolsa é R$ 49.70.",
+    "contexts": ["Histórico da SUZB3.SA no dia atual retornou o valor de fechamento de 49.70."]
+  },
+  {
+    "query": "Qual foi o crescimento da receita no último trimestre?",
+    "expected_answer": "A receita cresceu 8% no último trimestre em comparação com o mesmo período do ano anterior.",
+    "answer": "A receita líquida apresentou um crescimento de 8% no trimestre, impulsionada pelo aumento de volume de vendas.",
+    "contexts": ["A receita líquida consolidada foi de R$ 20 bilhões, um aumento de 8% em relação ao mesmo trimestre do ano anterior."]
+  },
+  {
+    "query": "Com R$ 5000, quantas ações de R$ 12.50 eu posso adquirir?",
+    "expected_answer": "Você pode adquirir 400 ações.",
+    "answer": "O resultado do cálculo 5000 / 12.50 é 400.0.",
+    "contexts": []
+  },
+  {
+    "query": "Existem planos de expansão internacional mencionados nos documentos?",
+    "expected_answer": "Sim, o relatório estratégico menciona planos de entrar no mercado asiático nos próximos dois anos.",
+    "answer": "Sim, o planejamento estratégico inclui a entrada no mercado asiático como uma prioridade para os próximos dois anos.",
+    "contexts": ["Visão Estratégica 2025: A expansão para o mercado asiático é um pilar central de nosso crescimento futuro, com operações previstas para iniciar em 24 meses."]
+  },
+  {
+    "query": "Cotação da WEGE3.SA",
+    "expected_answer": "O preço atual da WEGE3.SA é buscado em tempo real.",
+    "answer": "O preço atual de WEGE3.SA na bolsa é R$ 39.80.",
+    "contexts": ["Histórico da WEGE3.SA no dia atual retornou o valor de fechamento de 39.80."]
+  },
+  {
+    "query": "Qual o impacto da taxa de juros na empresa, segundo o relatório?",
+    "expected_answer": "O relatório indica que um aumento na taxa de juros pode elevar o custo da dívida e impactar negativamente a margem de lucro.",
+    "answer": "Segundo a análise de sensibilidade, um aumento na taxa de juros eleva o custo da dívida, pressionando as margens de lucro.",
+    "contexts": ["Análise de Sensibilidade: Um aumento de 1% na taxa de juros base resultaria em um aumento de R$ 100 milhões nas despesas financeiras, impactando a margem líquida."]
+  }
+]

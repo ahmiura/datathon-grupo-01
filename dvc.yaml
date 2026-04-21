@@ -1,0 +1,18 @@
+# Pipeline de Governança de Dados (DVC)
+# Demonstração para a Banca de Maturidade MLOps (Nível 2/3)
+
+stages:
+  generate_synthetic_dev_data:
+    cmd: python src/data/generate_synthetic.py
+    deps:
+      - src/data/generate_synthetic.py
+    outs:
+      - data/processed/synthetic_data_dev.csv
+
+  # Exemplo de como a extração de dados reais seria mapeada na governança
+  # (O código real é gerido pelo data_loader.py com cache no PostgreSQL dedicado de features)
+  # data_extraction:
+  #   cmd: echo "Extração controlada via PostgreSQL Cache"
+  #   outs:
+  #     - data/raw/relatorio_financeiro.pdf
+  #       cache: true

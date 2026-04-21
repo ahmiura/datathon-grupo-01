@@ -1,0 +1,131 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./models:/app/models
+      - ./mlruns:/app/mlruns
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./evaluation:/app/evaluation
+      - ./security:/app/security
+      - ./data:/app/data
+      - ./reports:/app/reports
+    depends_on:
+      - postgres_features
+      - mlflow
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - FEATURE_DB_HOST=postgres_features
+      - FEATURE_DB_PORT=5432
+      - FEATURE_DB_NAME=features_db
+      - FEATURE_DB_USER=features
+      - FEATURE_DB_PASS=features
+      
+  airflow:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./models:/app/models
+      - ./mlruns:/app/mlruns
+      - ./src:/app/src
+      - ./evaluation:/app/evaluation
+      - ./security:/app/security
+      - ./dags:/app/dags
+      - ./monitoring:/app/monitoring
+      - ./data:/app/data
+      - ./reports:/app/reports
+    depends_on:
+      - postgres_airflow
+      - postgres_features
+      - mlflow
+    environment:
+      - AIRFLOW_HOME=/app/airflow
+      - AIRFLOW__CORE__DAGS_FOLDER=/app/dags
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres_airflow:5432/airflow_db
+      - PYTHONUNBUFFERED=1
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - FEATURE_DB_HOST=postgres_features
+      - FEATURE_DB_PORT=5432
+      - FEATURE_DB_NAME=features_db
+      - FEATURE_DB_USER=features
+      - FEATURE_DB_PASS=features
+    command: >
+      bash -c "airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com &&
+      airflow standalone"
+
+  postgres_airflow:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow_db
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+
+  postgres_db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=mlflow
+      - POSTGRES_PASSWORD=mlflow
+      - POSTGRES_DB=mlflow_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  postgres_features:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=features
+      - POSTGRES_PASSWORD=features
+      - POSTGRES_DB=features_db
+    volumes:
+      - features_data:/var/lib/postgresql/data
+
+  mlflow:
+    build: .
+    command: mlflow server --backend-store-uri postgresql://mlflow:mlflow@postgres_db:5432/mlflow_db --default-artifact-root file:///app/mlruns --host 0.0.0.0 --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/app/mlruns
+    depends_on:
+      - postgres_db
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
+
+  loki:
+    image: grafana/loki:2.9.2
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+volumes:
+  grafana_data:
+  postgres_data:
+  features_data:
+  airflow_db_data:
