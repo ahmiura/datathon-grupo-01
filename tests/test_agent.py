@@ -1,5 +1,8 @@
 from unittest.mock import patch, MagicMock
 import numpy as np
+import os
+
+os.environ["GOOGLE_API_KEY"] = "fake-api-key"
 import pandas as pd
 from src.agent.tools import calculator, get_current_stock_price, search_company_documents, predict_petr4_close_price
 
@@ -26,13 +29,14 @@ def test_search_company_documents_tool():
 
 @patch("src.agent.tools.fetch_financial_data")
 @patch("src.agent.tools.get_predictor")
-def test_predict_petr4_close_price_tool(mock_get_predictor, mock_fetch_financial_data):
-    """Testa a ferramenta de integração com o LSTM simulando a feature store e o modelo"""
+def test_predict_petr4_close_price_tool(mock_get_predictor, mock_fetch):
+    """Testa a ferramenta de integração com o LSTM simulando a extração de dados e o modelo"""
     mock_predictor = MagicMock()
     mock_predictor.predict_next_day.return_value = 35.5
     mock_get_predictor.return_value = mock_predictor
     
-    mock_fetch_financial_data.return_value = pd.DataFrame({"Close": np.array([30.0] * 60)})
+    mock_df = pd.DataFrame({'Close': np.array([30.0] * 60)})
+    mock_fetch.return_value = mock_df
     
     result = predict_petr4_close_price.invoke("")
     assert "35.5" in result
@@ -44,9 +48,10 @@ def test_create_datathon_agent(mock_llm):
     agent = create_datathon_agent()
     assert agent is not None
 
+@patch("src.agent.rag_pipeline.GoogleGenerativeAIEmbeddings")
 @patch("src.agent.rag_pipeline.FAISS")
 @patch("src.agent.rag_pipeline.os.path.exists", return_value=True)
-def test_rag_pipeline_query(mock_exists, mock_faiss):
+def test_rag_pipeline_query(mock_exists, mock_faiss, mock_embeddings):
     """Testa a recuperação de documentos no RAG sem precisar de PDFs reais"""
     from src.agent.rag_pipeline import query_documents
     mock_vs = MagicMock()

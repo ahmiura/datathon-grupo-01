@@ -1,5 +1,8 @@
 from fastapi.testclient import TestClient
 from unittest.mock import patch
+import os
+
+os.environ["GOOGLE_API_KEY"] = "fake-api-key"
 from src.serving.app import app
 
 client = TestClient(app)
