@@ -22,7 +22,7 @@ O sistema utiliza uma arquitetura orquestrada (ReAct) composta pelos seguintes m
 * **Retrieval-Augmented Generation (RAG):** Documentos particionados (chunking) via `LangChain`, vetorizados usando `gemini-embedding-001` e armazenados localmente via `FAISS`.
 * **Modelo Preditivo Subjacente:** Rede Neural Recorrente (LSTM) treinada em `PyTorch`, monitorada por `MLflow`.
 * **Feature/Cache Store:** PostgreSQL dedicado (`postgres_features/features_db`) para materializar cotações em `stock_prices`, separado do banco de metadados do MLflow.
-* **Serving:** API em `FastAPI`, provisionada em container `Docker`.
+* **Serving:** API em `FastAPI`, provisionada em container `Docker`, com endpoint de hot-reload (`/reload-model`) para atualização de pesos sem downtime.
 * **Tracking e Observabilidade:** MLflow usa um PostgreSQL próprio (`postgres_db/mlflow_db`) para metadados de experimentos. Métricas e traces adicionais são capturados via `Langfuse`, `Prometheus` e `Grafana`.
 
 ## 4. Limitações e Fatores de Risco

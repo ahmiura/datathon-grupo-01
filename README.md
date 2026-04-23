@@ -11,8 +11,8 @@ Projeto integrador desenvolvido para o Datathon da Fase 5. Esta aplicação evol
 - **MLOps Nível 2:** Rastreamento de experimentos (MLflow), Observabilidade de LLMs (Langfuse), Monitoramento de Infra (Prometheus/Grafana) e tracking de artefatos de governança (Model Cards e System Cards).
 - **Detecção de Drift Automática (Evidently):** Monitoramento contínuo de estabilidade populacional (PSI) e *Data Drift* entre distribuições de treino e inferência, gerando alertas preditivos de degradação.
 - **Orquestração (Continuous Training com Airflow):** DAG customizada (`datathon_mlops_continuous_training`) executando o seguinte pipeline end-to-end:
-  1. **Atualização da Feature Store:** Ingestão incremental de novos dados financeiros em store operacional separada do backend do MLflow.
-  2. **Retreinamento LSTM:** Busca de hiperparâmetros (Grid Search), treino e seleção do melhor modelo via MLflow.
+  1. **Sincronização da Feature Store:** Ingestão incremental em PostgreSQL canônico e snapshot Parquet derivado para reprodutibilidade.
+  2. **Retreinamento LSTM & Hot-Reload:** Busca de hiperparâmetros (Grid Search), treino, seleção do melhor modelo via MLflow e recarga em memória na API REST em tempo real (zero downtime).
   3. **Atualização RAG:** Ingestão e vetorização de novos documentos corporativos no FAISS.
   4. **Avaliação Técnica:** LLM-as-a-Judge rodando framework **RAGAS** (Fidelidade, Relevância, Precisão).
   5. **Avaliação de Negócios:** LLM-as-a-Judge validando métricas de Tom, Concisão e Risco nas respostas.
@@ -36,7 +36,7 @@ Projeto integrador desenvolvido para o Datathon da Fase 5. Esta aplicação evol
 O `docker-compose.yml` separa os bancos por responsabilidade:
 
 - `postgres_db`: backend store do MLflow (`mlflow_db`), usado apenas para experimentos, runs, métricas e parâmetros.
-- `postgres_features`: feature/cache store operacional (`features_db`), onde o `data_loader.py` materializa a tabela `stock_prices`.
+- `postgres_features`: feature/cache store canônica (`features_db`), onde o `data_loader.py` materializa a tabela `stock_prices`.
 - `postgres_airflow`: metadados internos do Apache Airflow (`airflow_db`).
 - `mlflow`: UI e tracking server em `http://localhost:5000`.
 - `api`: API FastAPI em `http://localhost:8000`.
@@ -48,7 +48,7 @@ O `docker-compose.yml` separa os bancos por responsabilidade:
 ### Pré-requisitos
 - Docker e Docker Compose instalados.
 - Chaves de API do Google Gemini e do Langfuse configuradas em um arquivo `.env`.
-- Use `.env.example` como modelo. Não versionar o `.env` real.
+- Use `.env.example` como modelo.
 
 ### 1. Execução Completa (Docker)
 O ambiente está containerizado. Para subir a API, o MLflow, Prometheus e Grafana:
@@ -112,8 +112,8 @@ Isso executará o **Grid Search**, salvará o melhor modelo em `models/` e regis
 
 A DAG `datathon_mlops_continuous_training` executa:
 
-1. Atualização incremental da feature store local em `data/processed/feature_store.parquet`.
-2. Treinamento LSTM com registro no MLflow.
+1. Sincronização da feature store PostgreSQL e materialização de snapshot em `data/processed/feature_store.parquet`.
+2. Treinamento LSTM usando a mesma feature store PostgreSQL como fonte de verdade e registro no MLflow.
 3. Atualização do índice FAISS para RAG.
 4. Avaliação técnica RAGAS.
 5. Avaliação de negócio com LLM-as-a-Judge.
@@ -124,9 +124,11 @@ A DAG `drift_detection_and_retraining` executa `monitoring/drift.py`, compara da
 
 - Relatório HTML em `reports/data_drift_report.html`.
 - Métrica `dataset_drift_detected` e artefato no MLflow.
-- Retreinamento automático quando drift é detectado.
+- Retreinamento automático quando drift é detectado, com reload dinâmico do novo modelo na API.
 
 O script usa `postgres_features` como cache de cotações (`stock_prices`). Se esse banco estiver temporariamente indisponível, o `data_loader.py` tenta fallback direto para `yfinance`; nesse caso o pipeline pode continuar, mas sem aproveitar o cache.
+
+O arquivo `data/processed/feature_store.parquet` é um snapshot derivado do PostgreSQL para auditoria, reprodutibilidade de treino e eventual versionamento com DVC. Ele não é uma fonte paralela de dados.
 
 ## Variáveis de Ambiente
 
@@ -166,4 +168,63 @@ Para validar a configuração sem subir serviços:
 ```bash
 docker compose config
 python -m compileall src monitoring evaluation dags
+
+## 🧪 Testes e Integração (Guia Rápido)
+
+### Rodando os testes dentro do container (recomendado)
+Subir os serviços com Docker Compose e executar os testes diretamente no container `api` garante que as dependências e serviços externos (Postgres, MLflow, etc.) estejam disponíveis:
+
+```bash
+docker compose up -d
+docker compose exec api python -m pytest -q
+```
+
+Se quiser aumentar verbosidade ou rodar com timeout maior:
+
+```bash
+docker compose exec -T api timeout 600s python -m pytest -vv
+```
+
+### Rodando testes localmente (venv)
+
+```bash
+source venv/bin/activate
+python -m pytest -q
+```
+
+### Marcar testes de integração
+Testes que dependem de serviços externos (Postgres, Airflow, MLflow, ou chamadas a APIs externas) devem ser marcados com `@pytest.mark.integration`. Exemplos:
+
+```python
+import pytest
+
+@pytest.mark.integration
+def test_my_integration():
+    ...
+```
+
+Rodar apenas os testes unitários (excluindo integração):
+
+```bash
+python -m pytest -q -m "not integration"
+```
+
+Rodar apenas os testes de integração:
+
+```bash
+python -m pytest -q -m integration
+```
+
+### Integração com CI (exemplo GitHub Actions)
+No fluxo de CI, execute os testes dentro de um container ou runner com recursos suficientes. Exemplo de etapa no `workflow`:
+
+```yaml
+- name: Run tests in docker
+  run: |
+    docker compose up -d
+    docker compose exec api python -m pytest -q --maxfail=1
+```
+
+Adicionar relatórios de coverage e publicar artefatos (ex.: cobertura e logs do MLflow) é recomendado.
+
 ```

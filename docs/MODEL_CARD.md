@@ -11,7 +11,7 @@ Este Model Card fornece os detalhes técnicos, dados de treinamento, métricas d
 * **Licença:** Uso Acadêmico / Interno
 
 ## 2. Uso Pretendido (Intended Use)
-* **Uso Primário:** Prever o preço de fechamento (Close) da ação da Petrobras (`PETR4.SA`) para o próximo dia útil (t+1) com base em uma janela histórica de preços. O modelo é executado através do Agente ReAct utilizando a tool `predict_petr4_close_price`.
+* **Uso Primário:** Prever o preço de fechamento (Close) da ação da Petrobras (`PETR4.SA`) para o próximo dia útil (t+1) com base em uma janela histórica de preços. O modelo é executado através do Agente ReAct utilizando a tool `predict_petr4_close_price` e atualizado em tempo real na API (`/reload-model`) após cada retreino bem-sucedido no Airflow.
 * **Casos de Uso Aprovados:** 
   * Simulações e estudos de tendências financeiras.
   * Respostas conversacionais com ressalva de que se trata de uma previsão orientada por IA.
@@ -20,7 +20,7 @@ Este Model Card fornece os detalhes técnicos, dados de treinamento, métricas d
   * Aconselhamento de investimentos garantidos sem supervisão humana.
 
 ## 3. Dados de Treinamento e Avaliação
-* **Fonte de Dados:** Yahoo Finance API (`yfinance`), materializada em uma Feature/Cache Store dedicada em PostgreSQL (`postgres_features/features_db`) para evitar gargalos, reduzir chamadas externas e manter os dados operacionais separados do backend store do MLflow.
+* **Fonte de Dados:** Yahoo Finance API (`yfinance`), materializada em uma Feature/Cache Store canônica em PostgreSQL (`postgres_features/features_db`). API, agente, drift e treinamento consomem essa mesma fonte de verdade; o Parquet em `data/processed/feature_store.parquet` é apenas um snapshot derivado para auditoria e reprodutibilidade.
 * **Ativo (Ticker):** `PETR4.SA` (Petrobras PN)
 * **Feature Utilizada:** Preço de Fechamento Histórico (`Close`).
 * **Pré-processamento:**

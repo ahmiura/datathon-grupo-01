@@ -44,6 +44,12 @@ seaborn = "^0.13.2"
 jupyter = "^1.1.1"
 ipykernel = "^7.2.0"
 
+[tool.pytest.ini_options]
+markers = [
+	"integration: marks tests as integration (requires external services)"
+]
+addopts = "-ra"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -48,3 +48,14 @@ def test_chat_endpoint_internal_error(mock_create_agent):
     mock_create_agent.side_effect = Exception("Google GenAI Offline")
     response = client.post("/chat", json={"message": "Oi"})
     assert response.status_code == 500
+
+@patch("src.serving.app.Predictor")
+@patch("src.serving.app.os.path.exists", return_value=True)
+@patch("src.serving.app.get_predictor")
+def test_reload_model_endpoint(mock_get_predictor, mock_exists, mock_predictor):
+    """Garante que a rota de recarga do modelo limpa o cache e reinicializa o Predictor"""
+    response = client.post("/reload-model")
+    assert response.status_code == 200
+    assert "recarregado com sucesso" in response.json()["message"]
+    mock_predictor.assert_called_once()
+    mock_get_predictor.cache_clear.assert_called_once()

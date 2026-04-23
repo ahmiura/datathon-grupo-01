@@ -40,6 +40,12 @@ with DAG(
         bash_command='cd /app && python src/models/train.py',
     )
 
+    # Tarefa 2.5: Forçar a recarga do modelo na API (Zero Downtime)
+    reload_model_task = BashOperator(
+        task_id='reload_api_model',
+        bash_command='curl -X POST http://api:8000/reload-model',
+    )
+
     # Tarefa 3: Avaliar a qualidade das respostas do Agente LLM usando RAGAS (LLM-as-a-judge)
     evaluate_llm_task = BashOperator(
         task_id='evaluate_agent_ragas',
@@ -59,4 +65,4 @@ with DAG(
     )
 
     # Definindo a ordem de execução do Pipeline (Dependências)
-    update_feature_store_task >> train_model_task >> update_vector_db_task >> evaluate_llm_task >> evaluate_business_task
+    update_feature_store_task >> train_model_task >> reload_model_task >> update_vector_db_task >> evaluate_llm_task >> evaluate_business_task

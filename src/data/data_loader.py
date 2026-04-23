@@ -12,7 +12,12 @@ logger = logging.getLogger(__name__)
 
 # Variáveis globais para gerenciar o Rate Limit do Yahoo (Anti-Spam)
 LAST_YF_BLOCK_TIME = 0
-COOLDOWN_SECONDS = 3600  # Cooldown de 1 hora se for bloqueado
+# Parâmetros configuráveis via env
+COOLDOWN_SECONDS = int(os.getenv("COOLDOWN_SECONDS", 3600))  # Cooldown padrão 1 hora
+YF_RETRIES = int(os.getenv("YF_RETRIES", 3))
+YF_BACKOFF_FACTOR = float(os.getenv("YF_BACKOFF_FACTOR", 2.0))
+YF_TIMEOUT = int(os.getenv("YF_TIMEOUT", 30))
+DB_CONNECT_TIMEOUT = int(os.getenv("DB_CONNECT_TIMEOUT", 5))
 
 def get_db_connection():
     """Cria conexão com o PostgreSQL da feature store/cache."""
@@ -21,7 +26,8 @@ def get_db_connection():
         port=os.getenv("FEATURE_DB_PORT", os.getenv("DB_PORT", "5432")),
         dbname=os.getenv("FEATURE_DB_NAME", os.getenv("DB_NAME", "postgres")),
         user=os.getenv("FEATURE_DB_USER", os.getenv("DB_USER", "postgres")),
-        password=os.getenv("FEATURE_DB_PASS", os.getenv("DB_PASS", "postgres"))
+        password=os.getenv("FEATURE_DB_PASS", os.getenv("DB_PASS", "postgres")),
+        connect_timeout=DB_CONNECT_TIMEOUT
     )
 
 def fetch_financial_data(ticker: str, start: str, end: str) -> pd.DataFrame:
@@ -75,7 +81,22 @@ def fetch_financial_data(ticker: str, start: str, end: str) -> pd.DataFrame:
                 return df
 
             logger.info(f"Cache para {ticker} ({start} a {end}) incompleto/desatualizado. Consultando Yahoo Finance...")
-            df_yf = yf.download(ticker, start=start, end=end, progress=False)
+
+            # Tenta baixar do Yahoo com retries e backoff exponencial
+            attempt = 0
+            df_yf = pd.DataFrame()
+            while attempt < YF_RETRIES:
+                try:
+                    df_yf = yf.download(ticker, start=start, end=end, progress=False, timeout=YF_TIMEOUT)
+                    # Se conseguiu sem exceção, sai do loop
+                    break
+                except Exception as ex:
+                    attempt += 1
+                    backoff = YF_BACKOFF_FACTOR ** attempt
+                    logger.warning(f"yfinance download failed (attempt {attempt}/{YF_RETRIES}): {ex}. Backing off {backoff}s")
+                    time.sleep(backoff)
+
+            # Se df_yf continua vazio, vamos usar fallback abaixo
             
             # Corrige o formato MultiIndex retornado pelas versões novas do yfinance
             if isinstance(df_yf.columns, pd.MultiIndex):
@@ -118,14 +139,21 @@ def fetch_financial_data(ticker: str, start: str, end: str) -> pd.DataFrame:
 
     except (psycopg2.OperationalError, Exception) as e:
         logger.error(f"Erro no data_loader para {ticker}: {e}. Tentando fallback para yfinance direto.")
-        try:
-            df_fallback = yf.download(ticker, start=start, end=end, progress=False)
-            if isinstance(df_fallback.columns, pd.MultiIndex):
-                df_fallback.columns = df_fallback.columns.get_level_values(0)
-            return df_fallback
-        except Exception as yf_e:
-            logger.error(f"Fallback para yfinance também falhou: {yf_e}")
-            return pd.DataFrame()
+        # fallback: tentar yfinance com retries
+        attempt = 0
+        while attempt < YF_RETRIES:
+            try:
+                df_fallback = yf.download(ticker, start=start, end=end, progress=False, timeout=YF_TIMEOUT)
+                if isinstance(df_fallback.columns, pd.MultiIndex):
+                    df_fallback.columns = df_fallback.columns.get_level_values(0)
+                return df_fallback
+            except Exception as yf_e:
+                attempt += 1
+                backoff = YF_BACKOFF_FACTOR ** attempt
+                logger.warning(f"Fallback yfinance failed (attempt {attempt}/{YF_RETRIES}): {yf_e}. Backoff {backoff}s")
+                time.sleep(backoff)
+        logger.error(f"Fallback para yfinance também falhou após {YF_RETRIES} tentativas.")
+        return pd.DataFrame()
     finally:
         if conn:
             cursor.close()
