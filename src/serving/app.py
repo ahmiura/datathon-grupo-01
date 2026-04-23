@@ -2,14 +2,13 @@ from fastapi import FastAPI, HTTPException, Request
 from contextlib import asynccontextmanager
 from src.models.predict import Predictor
 from src.config import TICKER, MODEL_PATH, START_DATE, END_DATE
+from src.data.data_loader import fetch_financial_data
 from src.serving.schemas import PredictionRequest, PredictionResponse
 import uvicorn
 import os
-import yfinance as yf
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Gauge
 import logging
-import time
 
 # Importações para o Agente e LLM (Etapa 2 - Datathon)
 from pydantic import BaseModel
@@ -22,8 +21,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 predictor = None
-yf_cache = {"data": [], "timestamp": 0}
-CACHE_TTL = 3600  # Tempo de vida do cache em segundos (1 hora)
 
 class ChatRequest(BaseModel):
     message: str
@@ -71,24 +68,18 @@ def predict(request: PredictionRequest):
     try:
         input_data = request.last_60_days
 
-        # Se o usuário não enviou dados, buscamos automaticamente no Yahoo Finance
+        # Se o usuário não enviou dados, buscamos via data_loader com feature/cache store.
         if not input_data:
-            current_time = time.time()
-            # Verifica se o cache está vazio ou se já passou de 1 hora
-            if not yf_cache["data"] or (current_time - yf_cache["timestamp"] > CACHE_TTL):
-                logger.info(f"Buscando dados recentes para {TICKER} no Yahoo Finance...")
-                df = yf.download(TICKER, start=START_DATE, end=END_DATE, progress=False)
-                fetched_data = df['Close'].values[-60:].tolist()
-                
-                if len(fetched_data) < 60:
-                    logger.warning(f"Yahoo Finance limitou a requisição ({len(fetched_data)} dias). Ativando Circuit Breaker (Fallback).")
-                    fetched_data = [35.0] * 60  # Fallback seguro para manter a API 100% online
-                
-                # Salva no cache
-                yf_cache["data"] = fetched_data
-                yf_cache["timestamp"] = current_time
-                
-            input_data = yf_cache["data"]
+            logger.info(f"Buscando dados recentes para {TICKER} via feature/cache store...")
+            df = fetch_financial_data(TICKER, START_DATE, END_DATE)
+            input_data = df['Close'].values[-60:].tolist() if not df.empty and 'Close' in df.columns else []
+
+            if len(input_data) < 60:
+                logger.warning(
+                    "Camada de dados retornou %d dias. Ativando Circuit Breaker (Fallback).",
+                    len(input_data),
+                )
+                input_data = [35.0] * 60
 
         price = predictor.predict_next_day(input_data)
         return {"ticker": TICKER, "predicted_price": price}

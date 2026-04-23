@@ -29,6 +29,7 @@ Projeto integrador desenvolvido para o Datathon da Fase 5. Esta aplicação evol
 - `evaluation/`: Scripts de avaliação RAGAS (Faithfulness, Relevancy, etc).
 - `tests/`: Suíte de testes automatizados (`pytest`).
 - `docs/`: Artefatos de governança (OWASP Mapping, System Card).
+- `docs/ARCHITECTURE.md`: Diagramas Mermaid do fluxo online e dos pipelines MLOps.
 
 ## Arquitetura de Serviços
 

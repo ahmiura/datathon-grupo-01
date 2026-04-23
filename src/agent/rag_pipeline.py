@@ -13,7 +13,7 @@ VECTOR_STORE_DIR = "data/processed/faiss_index"
 DEFAULT_PDF_PATH = "data/raw"
 
 def build_or_load_vector_store(pdf_path: str = DEFAULT_PDF_PATH):
-    embed_model = os.getenv("GEMINI_EMBEDDING_MODEL", "models/embedding-001")
+    embed_model = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
     embeddings = GoogleGenerativeAIEmbeddings(model=embed_model)
     
     # Se o banco vetorial já existe, apenas carrega (evita reprocessamento a cada chamada - GAP 03)
@@ -55,7 +55,7 @@ def update_vector_store(pdf_path: str = DEFAULT_PDF_PATH) -> bool:
     Força a reconstrução do Vector Store. 
     Usado pelo Airflow (Continuous Training) para injetar novos documentos no cérebro do Agente.
     """
-    embed_model = os.getenv("GEMINI_EMBEDDING_MODEL", "models/embedding-001")
+    embed_model = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
     embeddings = GoogleGenerativeAIEmbeddings(model=embed_model)
     
     logger.info(f"Atualizando Vector Store a partir de {pdf_path}...")
