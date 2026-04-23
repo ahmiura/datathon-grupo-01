@@ -15,7 +15,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 from src.features.data import preprocess_data
-from src.features.feature_store import update_feature_store
+from src.data.data_loader import fetch_financial_data
+from src.features.feature_store import materialize_feature_store_snapshot, STORE_PATH
 from src.models.model import LSTMModel
 from src.config import *
 
@@ -68,6 +69,10 @@ def run_experiment(params: Dict[str, Any], X_train: torch.Tensor, y_train: torch
     
     with mlflow.start_run(run_name=run_name):
         mlflow.log_params(params)
+        mlflow.log_param("training_data_source", "postgres_features.stock_prices")
+        mlflow.log_param("training_data_snapshot", STORE_PATH)
+        if os.path.exists(STORE_PATH):
+            mlflow.log_artifact(STORE_PATH, artifact_path="data")
         
         # --- Tags de Governança Obrigatórias (GAP 05) ---
         required_tags = {
@@ -132,8 +137,9 @@ def train() -> None:
     mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment("Datathon")
 
-    logger.info("1. Atualizando Feature Store (Incremental)...")
-    df = update_feature_store(TICKER, START_DATE, END_DATE)
+    logger.info("1. Lendo dados da feature store PostgreSQL...")
+    df = fetch_financial_data(TICKER, START_DATE, END_DATE)
+    materialize_feature_store_snapshot(TICKER, START_DATE, END_DATE, df=df)
     
     # Filtra apenas a feature de Fechamento, pois o modelo tem input_size=1
     if df is not None and 'Close' in df.columns:

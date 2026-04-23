@@ -9,10 +9,8 @@ stages:
     outs:
       - data/processed/synthetic_data_dev.csv
 
-  # Exemplo de como a extração de dados reais seria mapeada na governança
-  # (O código real é gerido pelo data_loader.py com cache no PostgreSQL dedicado de features)
-  # data_extraction:
-  #   cmd: echo "Extração controlada via PostgreSQL Cache"
+  # Exemplo de snapshot versionavel derivado da feature store PostgreSQL canonica
+  # feature_store_snapshot:
+  #   cmd: python -c "from src.features.feature_store import materialize_feature_store_snapshot; from src.config import TICKER, START_DATE, END_DATE; materialize_feature_store_snapshot(TICKER, START_DATE, END_DATE)"
   #   outs:
-  #     - data/raw/relatorio_financeiro.pdf
-  #       cache: true
+  #     - data/processed/feature_store.parquet

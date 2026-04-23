@@ -44,9 +44,11 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  Airflow[Apache Airflow] --> FeatureTask[Atualizar Feature Store]
-  FeatureTask --> Parquet[(data/processed/feature_store.parquet)]
-  FeatureTask --> Train[Treinar LSTM Grid Search]
+  Airflow[Apache Airflow] --> FeatureTask[Sincronizar Feature Store PostgreSQL]
+  FeatureTask --> FeatureDB[(PostgreSQL features_db stock_prices)]
+  FeatureTask --> Parquet[(Snapshot Parquet derivado)]
+  FeatureDB --> Train[Treinar LSTM Grid Search]
+  Parquet --> Train
   Train --> MLflow[(MLflow Tracking)]
   Train --> ModelFiles[models/lstm_model.pth scaler.joblib hyperparameters.json]
 
@@ -67,7 +69,7 @@ flowchart TD
   BizMetrics --> MLflow
 
   Airflow --> Drift[Evidently Drift Detection]
-  Drift --> FeatureDB[(PostgreSQL features_db stock_prices)]
+  Drift --> FeatureDB
   Drift --> DriftReport[reports/data_drift_report.html]
   Drift --> DriftMetric[dataset_drift_detected]
   DriftReport --> MLflow
@@ -84,8 +86,9 @@ flowchart TD
 | --- | --- | --- |
 | Serving | FastAPI | Expor `/chat`, `/predict` e `/metrics` |
 | Orquestração | LangChain ReAct | Selecionar tools e consolidar a resposta |
-| Dados financeiros | `fetch_financial_data` | Cache PostgreSQL e fallback para `yfinance` |
-| Feature/cache store | `postgres_features/features_db` | Materializar `stock_prices` |
+| Dados financeiros | `fetch_financial_data` | Sincronizar PostgreSQL canônico e fallback para `yfinance` |
+| Feature/cache store | `postgres_features/features_db` | Fonte de verdade para API, agente, drift e treino |
+| Snapshot de treino | `data/processed/feature_store.parquet` | Artefato derivado para auditoria, DVC e reprodutibilidade |
 | RAG | FAISS + Gemini Embeddings | Busca semântica em relatórios PDF |
 | Modelo preditivo | PyTorch LSTM | Prever fechamento de PETR4.SA |
 | Avaliação técnica | RAGAS | Medir fidelidade, relevância e recuperação de contexto |

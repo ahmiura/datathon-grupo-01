@@ -2,6 +2,7 @@ import os
 import logging
 import pandas as pd
 import mlflow
+import requests
 from evidently.report import Report
 from evidently.metric_preset import DataDriftPreset
 from src.data.data_loader import fetch_financial_data
@@ -73,6 +74,12 @@ def detect_drift():
         logger.warning("🚨 ALERTA: Data Drift detectado na distribuição de preços/volatilidade!")
         logger.info("🔄 Iniciando retreinamento automático (Champion-Challenger) com a Feature Store atualizada...")
         train()
+        logger.info("Notificando a API para recarregar o novo modelo em memória...")
+        try:
+            requests.post("http://api:8000/reload-model")
+            logger.info("✅ API atualizada com sucesso (Zero Downtime).")
+        except Exception as e:
+            logger.error(f"Erro ao notificar a API: {e}")
     else:
         logger.info("✅ Distribuição de dados estável. Nenhum drift estrutural significativo detectado.")
 

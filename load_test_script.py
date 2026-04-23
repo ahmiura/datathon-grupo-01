@@ -2,6 +2,9 @@
 Script de Teste de Carga e Geração de Tráfego.
 Responsável por simular requisições HTTP para a API com o objetivo de
 alimentar o Prometheus e visualizar as métricas no dashboard do Grafana.
+
+Este arquivo foi renomeado para evitar que o `pytest` o colete automaticamente
+durante a execução da suíte de testes (o original entrava em loop infinito).
 """
 
 import requests
@@ -18,7 +21,7 @@ while True:
     try:
         # 50% de chance de enviar dados, 50% de pedir busca automática (que é mais lenta)
         if random.random() > 0.5:
-            payload = {} 
+            payload = {}
             type_req = "AUTO (Yahoo)"
         else:
             payload = {"last_60_days": [random.uniform(20.0, 40.0) for _ in range(60)]}
@@ -35,6 +38,6 @@ while True:
 
     except Exception as e:
         print(f"⚠️ Erro de conexão: {e}")
-    
+
     # Aguarda um pouco para variar a carga
     time.sleep(random.uniform(0.1, 0.5))
