@@ -53,7 +53,11 @@ def test_create_datathon_agent(mock_llm):
 @patch("src.agent.rag_pipeline.os.path.exists", return_value=True)
 def test_rag_pipeline_query(mock_exists, mock_faiss, mock_embeddings):
     """Testa a recuperação de documentos no RAG sem precisar de PDFs reais"""
-    from src.agent.rag_pipeline import query_documents
+    from src.agent.rag_pipeline import query_documents, get_cached_vector_store
+    
+    # Limpa o cache para garantir que a injeção do mock não seja ignorada
+    get_cached_vector_store.cache_clear()
+
     mock_vs = MagicMock()
     mock_doc = MagicMock()
     mock_doc.page_content = "Texto confidencial do PDF da empresa."
