@@ -8,7 +8,7 @@ A API de previsão e conversação (`/chat` e `/predict`) opera em modo *statele
 ## 2. Mascaramento Dinâmico de PII (Personally Identifiable Information)
 Devido à natureza não-determinística dos LLMs, existe o risco de o Agente vazar ou repassar dados sensíveis presentes acidentalmente em relatórios corporativos ou no próprio input do usuário.
 * **Implementação:** Desenvolvemos um **Guardrail de Output** (`security/guardrails.py`) que processa a string final antes de enviá-la via rede.
-* **Mecanismo:** Utiliza expressões regulares (Regex) para identificar padrões de dados pessoais (como o padrão de CPFs: `XXX.XXX.XXX-XX`) e aplica uma máscara (`***.***.***-**`), garantindo que o dado não trafegue para o frontend.
+* **Mecanismo:** Utiliza expressões regulares (Regex) para identificar padrões de dados pessoais, corporativos e financeiros (como CPFs, CNPJs, E-mails e Contas Bancárias) e aplica máscaras de ofuscação (ex: `***.***.***-**` para CPF e `[EMAIL:***@***]`), garantindo que o dado não trafegue para o frontend.
 
 ## 3. Rastreabilidade Anonimizada
 Para fins de observabilidade operacional e cálculo de métricas RAGAS, o sistema retém logs no Langfuse e MLflow.

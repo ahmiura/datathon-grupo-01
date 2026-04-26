@@ -42,7 +42,7 @@ def create_datathon_agent(model_name: Optional[str] = None, temperature: float =
         AgentExecutor: Executor do LangChain configurado com prompt, ferramentas e políticas de retry.
     """
     if model_name is None:
-        model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+        model_name = os.getenv("GEMINI_MODEL_NAME", "gemma-3-27b-it")
         
     tools = [predict_petr4_close_price, get_current_stock_price, calculator, search_company_documents]
     

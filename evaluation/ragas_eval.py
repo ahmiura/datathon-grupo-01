@@ -4,6 +4,8 @@ import logging
 import time
 import asyncio
 import mlflow
+import requests
+from src.agent.rag_pipeline import query_documents
 from datasets import Dataset
 from ragas import evaluate
 from ragas.metrics import answer_relevancy, context_precision, context_recall, faithfulness
@@ -45,13 +47,38 @@ def run_evaluation(golden_set_path: str, max_samples: int = None):
         logger.info(f"Limitando avaliação RAGAS a {max_samples} amostras (Modo Dev/Teste Rápido)...")
         golden_data = golden_data[:max_samples]
     
-    # Extrai os dados do golden_set. Em um fluxo ideal de CI/CD, o campo 'answer' e 
-    # 'contexts' seriam populados dinamicamente executando seu Agente para cada 'query'.
+    logger.info("Gerando respostas frescas do Agente via API para avaliação contínua real...")
+    api_url = os.getenv("API_URL", "http://api:8000/chat")
+    live_data = []
+    
+    for idx, item in enumerate(golden_data):
+        query = item["query"]
+        logger.info(f"[{idx+1}/{len(golden_data)}] Obtendo inferência para: '{query}'")
+        
+        # 1. Obtém o contexto real que o RAG recuperaria hoje
+        real_context = query_documents(query)
+        item["contexts"] = [real_context] if real_context else ["Sem contexto retornado."]
+        
+        # 2. Bate na API para pegar a resposta real do Agente com o modelo atualizado
+        try:
+            resp = requests.post(api_url, json={"message": query}, timeout=60)
+            item["answer"] = resp.json().get("response", "Erro na resposta") if resp.status_code == 200 else f"Erro API: {resp.status_code}"
+        except Exception as e:
+            logger.error(f"Erro ao comunicar com a API: {e}")
+            item["answer"] = "Falha de Conexão com o Agente."
+            
+        live_data.append(item)
+
+    # Salva os resultados gerados ao vivo para que o LLM Judge (Business Metrics) avalie exatamente as mesmas respostas
+    latest_eval_path = "data/golden_set/latest_eval_predictions.json"
+    with open(latest_eval_path, "w", encoding="utf-8") as f:
+        json.dump(live_data, f, ensure_ascii=False, indent=2)
+
     data_for_ragas = {
-        "question": [item["query"] for item in golden_data],
-        "answer": [item.get("answer", "Resposta não gerada") for item in golden_data],
-        "contexts": [item.get("contexts", ["Sem contexto"]) for item in golden_data],
-        "ground_truth": [item["expected_answer"] for item in golden_data]
+        "question": [item["query"] for item in live_data],
+        "answer": [item["answer"] for item in live_data],
+        "contexts": [item["contexts"] for item in live_data],
+        "ground_truth": [item["expected_answer"] for item in live_data]
     }
     
     dataset = Dataset.from_dict(data_for_ragas)
@@ -99,7 +126,5 @@ def run_evaluation(golden_set_path: str, max_samples: int = None):
     return results
 
 if __name__ == "__main__":
-    # Execução local para teste
-    # CUIDADO com o caminho dependendo de onde rodar o script
-    # Altere max_samples para None quando for rodar a avaliação oficial para a banca
+    # max_samples=3 devido os limites do LLM do Google (gratuito)
     run_evaluation("data/golden_set/golden_set.json", max_samples=3)

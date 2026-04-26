@@ -33,7 +33,7 @@ def get_db_connection():
 def fetch_financial_data(ticker: str, start: str, end: str) -> pd.DataFrame:
     """
     Coleta dados financeiros, utilizando a feature store PostgreSQL como cache.
-    Se os dados não estiverem no cache, busca no Yahoo Finance e os armazena.
+    Se os dados não estiverem no cache, busca no Yahoo Finance via yfinance (com retries/backoff) e os armazena de forma resiliente.
     """
     conn = None
     try:
@@ -106,7 +106,7 @@ def fetch_financial_data(ticker: str, start: str, end: str) -> pd.DataFrame:
                 df_yf_reset = df_yf.reset_index()
                 records = [
                     (ticker, row['Date'].date(), float(row['Open']), float(row['High']), 
-                     float(row['Low']), float(row['Close']), int(row['Volume']))
+                     float(row['Low']), float(row['Close']), int(row['Volume']) if pd.notna(row['Volume']) else 0)
                     for _, row in df_yf_reset.iterrows()
                 ]
                 

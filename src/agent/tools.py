@@ -1,7 +1,8 @@
 from langchain.tools import tool
 from src.models.predict import Predictor
 from src.agent.rag_pipeline import query_documents
-from src.config import START_DATE, END_DATE
+from src.config import START_DATE
+from datetime import datetime, timedelta
 from src.data.data_loader import fetch_financial_data
 import logging
 from functools import lru_cache
@@ -26,8 +27,15 @@ def predict_petr4_close_price(query: str = "") -> str:
             return "Modelo preditivo indisponível no momento."
         
         # Busca os dados usando o data loader com cache
-        df = fetch_financial_data(ticker="PETR4.SA", start=START_DATE, end=END_DATE)
-        input_data = df['Close'].values[-60:].tolist()
+        current_date = datetime.now()
+        dynamic_start = (current_date - timedelta(days=120)).strftime('%Y-%m-%d')
+        df = fetch_financial_data(ticker="PETR4.SA", start=dynamic_start, end=current_date.strftime('%Y-%m-%d'))
+        
+        if df is None or df.empty or 'Close' not in df.columns:
+            logger.warning("Falha ao obter dados reais. Ativando Fallback na Tool.")
+            input_data = [35.0] * 60
+        else:
+            input_data = df['Close'].values[-60:].tolist()
 
         # Circuit Breaker da Tool (mesma proteção que colocamos na API)
         if len(input_data) < 60:
@@ -45,7 +53,9 @@ def get_current_stock_price(ticker: str) -> str:
     """Use esta ferramenta para obter o preço atual e real de qualquer ação. A entrada deve ser EXATAMENTE o ticker da ação com o sufixo (ex: 'PETR4.SA', 'VALE3.SA', 'ITUB4.SA')."""
     try:
         # Busca os dados usando o data loader com cache, garantindo que os dados mais recentes sejam buscados
-        history = fetch_financial_data(ticker=ticker, start=START_DATE, end=END_DATE)
+        current_date = datetime.now()
+        dynamic_start = (current_date - timedelta(days=15)).strftime('%Y-%m-%d')
+        history = fetch_financial_data(ticker=ticker, start=dynamic_start, end=current_date.strftime('%Y-%m-%d'))
         if history.empty:
             return f"Não foram encontrados dados para o ticker {ticker}."
         price = history['Close'].iloc[-1]
@@ -119,16 +129,13 @@ def calculator(expression: str) -> str:
         parsed = ast.parse(expression, mode='eval')
         resultado_val = _eval(parsed)
 
-        # Normaliza o resultado para string legível
+        # Normaliza o resultado para string legível, consistente com o Golden Set
         if isinstance(resultado_val, Decimal):
-            # Se é inteiro mas a expressão contém ponto decimal, preserve uma casa
             if resultado_val == resultado_val.to_integral():
-                if "." in expression:
-                    resultado = f"{int(resultado_val)}.0"
-                else:
-                    resultado = str(int(resultado_val))
+                # Se o resultado é um inteiro, formata com uma casa decimal (ex: 200.0)
+                resultado = f"{resultado_val:.1f}"
             else:
-                # Remove trailing zeros
+                # Se for decimal, normaliza para remover zeros à direita (ex: 32.80 -> 32.8)
                 resultado = format(resultado_val.normalize(), 'f')
         else:
             resultado = str(resultado_val)

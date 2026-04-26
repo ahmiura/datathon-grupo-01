@@ -33,7 +33,7 @@ O sistema utiliza uma arquitetura orquestrada (ReAct) composta pelos seguintes m
 ## 5. Medidas de Segurança, Privacidade e Guardrails (OWASP)
 Para mitigar riscos comuns em aplicações com LLMs, este sistema implementa:
 * **Guardrails de Input:** Bloqueio ativo de tentativas de `Prompt Injection` e restrição de escopo temático (rejeição de pedidos de piadas, receitas, comandos de sistema).
-* **Guardrails de Output:** Expressões Regulares (Regex) varrem o conteúdo devolvido pelo Agente mascarando e omitindo Dados Pessoalmente Identificáveis (PII, como CPFs) para proteção da LGPD.
+* **Guardrails de Output:** Expressões Regulares (Regex) varrem o conteúdo devolvido pelo Agente mascarando e omitindo Dados Pessoalmente Identificáveis (PII) e informações sensíveis (como CPFs, CNPJs, E-mails e Contas Bancárias) para proteção da LGPD e sigilo bancário.
 * **Validação de Tools:** As ferramentas de execução matemática rejeitam comandos com caracteres alfabéticos para mitigar Injeção de Código Arbitrário.
 
 ## 6. Avaliação e Performance

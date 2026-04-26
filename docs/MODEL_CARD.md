@@ -26,7 +26,8 @@ Este Model Card fornece os detalhes técnicos, dados de treinamento, métricas d
 * **Pré-processamento:**
   * Imputação/Limpeza de valores nulos ou anômalos.
   * Escalonamento dos dados (ex: `MinMaxScaler`) para o intervalo `[0, 1]` visando convergência eficiente dos gradientes.
-  * Janelamento de tempo (Time-steps): Sequências estáticas de **60 dias** (`TIMESTEPS = 60`) predizendo 1 dia no futuro.
+  * Janelamento Dinâmico: A divisão de Treino/Teste agora é 100% dinâmica. O modelo treina a partir de 2021 e valida (Teste) estritamente nos últimos 120 dias do momento da execução.
+  * Sequenciamento (Time-steps): Sequências de **60 dias** (`TIMESTEPS = 60`) para prever 1 dia no futuro.
 
 ## 4. Arquitetura do Modelo e Hiperparâmetros
 O modelo foi selecionado através de uma técnica de **Grid Search** automatizada que explora múltiplas topologias. A configuração exata do melhor modelo (salva dinamicamente em `model_hyperparameters.json`) é extraída do seguinte espaço de busca:
@@ -57,9 +58,10 @@ O modelo é avaliado contra um subconjunto de testes (Test Split) utilizando mé
 * **RMSE (Root Mean Squared Error):** Penaliza erros mais grosseiros na previsão.
 * **MAE (Mean Absolute Error):** Média absoluta do desvio de preço em Reais (R$).
 * **MAPE (Mean Absolute Percentage Error):** Erro percentual da previsão em relação ao preço real do ativo.
+* **Avaliação Champion/Challenger:** O novo modelo (Challenger) só substitui a versão de produção (Champion) se o seu RMSE avaliado for estritamente menor na mesma janela temporal.
 * **Gráfico de Predição:** Uma plotagem (`prediction_plot.png`) comparando a curva de fechamento real e a curva predita pela IA é salva como artefato no MLflow.
 
 ## 7. Fatores de Risco e Limitações
 * **Volatilidade:** Modelos LSTM treinados apenas com preços históricos de fechamento não capturam eventos imprevisíveis como pandemias, trocas de comando da estatal ou crises geopolíticas.
-* **Data Drift:** Se houver uma quebra estrutural na tendência de mercado da Petrobras, a performance do modelo (RMSE) degradará. Este risco é mitigado pela orquestração do **Apache Airflow**, que prevê o retreinamento contínuo (Continuous Training) do modelo na ocorrência de *drifts* detectados pelo Evidently.
+* **Data Drift:** A performance do modelo degradará frente a quebras estruturais (Concept Drift). Mitigado por uma DAG do Airflow que monitora ativamente a distribuição da feature `Close` de segunda a quinta-feira, forçando a avaliação do Champion/Challenger em caso de anomalia.
 * **Circuit Breaker / Fallback:** Caso a consulta ao PostgreSQL operacional falhe, o `data_loader.py` tenta fallback direto para `yfinance`. Caso a extração externa também falhe por rate limit ou conectividade, o pipeline evita corromper a feature store e retorna dados vazios para que a etapa chamadora aborte ou acione o fallback de aplicação.

@@ -5,6 +5,7 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import FAISS
+from functools import lru_cache
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -33,6 +34,10 @@ def build_or_load_vector_store(pdf_path: str = DEFAULT_PDF_PATH):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
     
+    if not splits:
+        logger.warning("Nenhum texto extraído dos PDFs. Retornando vazio.")
+        return None
+
     # 3. Cria o Vector Store em lotes (Proteção contra Rate Limit 429 - Free Tier)
     vectorstore = None
     batch_size = 10  # Envia 10 pedaços por vez
@@ -49,6 +54,11 @@ def build_or_load_vector_store(pdf_path: str = DEFAULT_PDF_PATH):
             
     vectorstore.save_local(VECTOR_STORE_DIR)
     return vectorstore
+
+@lru_cache(maxsize=1)
+def get_cached_vector_store():
+    """Mantém o Vector Store (FAISS) na memória RAM para não ler do disco em cada pergunta do Agente."""
+    return build_or_load_vector_store()
 
 def update_vector_store(pdf_path: str = DEFAULT_PDF_PATH) -> bool:
     """
@@ -69,6 +79,10 @@ def update_vector_store(pdf_path: str = DEFAULT_PDF_PATH) -> bool:
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
     
+    if not splits:
+        logger.warning(f"Nenhum texto extraído dos PDFs em {pdf_path}. Abortando atualização.")
+        return False
+
     # Criação em lotes para evitar Rate Limit na atualização via Airflow
     vectorstore = None
     batch_size = 10
@@ -86,11 +100,12 @@ def update_vector_store(pdf_path: str = DEFAULT_PDF_PATH) -> bool:
             time.sleep(6)
             
     vectorstore.save_local(VECTOR_STORE_DIR)
+    get_cached_vector_store.cache_clear()  # Invalida o cache para que a API carregue os novos PDFs na próxima pergunta
     logger.info(f"✅ Vector Store atualizado com sucesso com {len(docs)} páginas!")
     return True
 
 def query_documents(query: str, k: int = 3) -> str:
-    vectorstore = build_or_load_vector_store()
+    vectorstore = get_cached_vector_store()
     if not vectorstore:
         return "Nenhum documento interno disponível para consulta no momento."
         
