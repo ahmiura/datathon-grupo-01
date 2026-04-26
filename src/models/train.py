@@ -6,8 +6,18 @@ import numpy as np
 import json
 import pandas as pd
 import random
+
+# --- Supressão de Warnings (Para logs mais limpos no Airflow) ---
+os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module=".*distutils.*")
+warnings.filterwarnings("ignore", message="X does not have valid feature names")
+
 import mlflow
 import logging
+logging.getLogger("mlflow.utils.requirements_utils").setLevel(logging.ERROR)
+logging.getLogger("mlflow.utils.git_utils").setLevel(logging.ERROR)
+
 from typing import Tuple, Dict, Any
 import matplotlib
 # Configura backend não-interativo para evitar erros no Docker
@@ -15,6 +25,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 from src.features.data import preprocess_data
+from datetime import datetime, timedelta
+import shutil
 from src.data.data_loader import fetch_financial_data
 from src.features.feature_store import materialize_feature_store_snapshot, STORE_PATH
 from src.models.model import LSTMModel
@@ -120,6 +132,9 @@ def run_experiment(params: Dict[str, Any], X_train: torch.Tensor, y_train: torch
 
         mlflow.log_artifact("prediction_plot.png")
         
+        # Registra o artefato real do modelo PyTorch no MLflow para versionamento e rollback seguro
+        mlflow.pytorch.log_model(model, "lstm_model")
+        
         # Limpeza: Remove o arquivo local após enviar para o MLflow para não sujar o disco
         if os.path.exists("prediction_plot.png"):
             os.remove("prediction_plot.png")
@@ -137,9 +152,11 @@ def train() -> None:
     mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment("Datathon")
 
+    # Definindo a data atual dinamicamente para evitar hardcode de END_DATE
+    current_date = datetime.now().strftime('%Y-%m-%d')
+
     logger.info("1. Lendo dados da feature store PostgreSQL...")
-    df = fetch_financial_data(TICKER, START_DATE, END_DATE)
-    materialize_feature_store_snapshot(TICKER, START_DATE, END_DATE, df=df)
+    df = fetch_financial_data(TICKER, START_DATE, current_date)
     
     # Filtra apenas a feature de Fechamento, pois o modelo tem input_size=1
     if df is not None and 'Close' in df.columns:
@@ -148,14 +165,35 @@ def train() -> None:
     # --- Circuit Breaker para o Treinamento (Rate Limit Fallback) ---
     if df is None or len(df) < 100:
         logger.warning("Yahoo Finance bloqueou a requisição (Rate Limit). Ativando dados sintéticos para manter a DAG rodando...")
-        dates = pd.date_range(start=START_DATE, periods=500, freq='B')
+        # Garante que os dados sintéticos terminem no dia atual para refletir o cenário recente
+        dates = pd.date_range(end=current_date, periods=500, freq='B')
         df = pd.DataFrame({'Close': np.linspace(20, 40, 500) + np.random.normal(0, 2, 500)}, index=dates)
         
+    # Materializa o snapshot do DVC/Parquet APENAS quando temos certeza de que os dados são válidos e saudáveis
+    materialize_feature_store_snapshot(TICKER, START_DATE, current_date, df=df)
+        
+    # Divisão de teste: reservamos 120 dias. Como o LSTM usa TIMESTEPS=60, isso nos dará 60 dias robustos de validação do modelo.
+    dynamic_test_start = (df.index[-120]).strftime('%Y-%m-%d') if len(df) > 120 else TEST_START_DATE
+
+    # Proteção do Scaler (Champion/Challenger)
+    champion_scaler_path = SCALER_PATH
+    backup_scaler_path = SCALER_PATH + ".backup"
+    challenger_scaler_path = os.path.join(MODELS_DIR, "scaler_challenger.joblib")
+    
+    if os.path.exists(champion_scaler_path):
+        shutil.copy(champion_scaler_path, backup_scaler_path)
+
     X_train, y_train, X_test, y_test, scaler = preprocess_data(
         df, 
-        train_split_date=TEST_START_DATE, 
+        train_split_date=dynamic_test_start, 
         save_scaler=True
     )
+
+    # Move o novo scaler gerado para o arquivo challenger e restaura o champion para a API
+    if os.path.exists(champion_scaler_path):
+        shutil.move(champion_scaler_path, challenger_scaler_path)
+        if os.path.exists(backup_scaler_path):
+            shutil.move(backup_scaler_path, champion_scaler_path)
     
     X_train = torch.tensor(X_train, dtype=torch.float32)
     y_train = torch.tensor(y_train, dtype=torch.float32)
@@ -191,15 +229,45 @@ def train() -> None:
     logger.info(f"Melhor RMSE: {best_rmse:.4f}")
     logger.info(f"Melhores Parâmetros: {best_params}")
     
-    # Salvar modelo
-    torch.save(best_state, MODEL_PATH)
-    logger.info(f"Modelo salvo em: {MODEL_PATH}")
+    # Salvar modelo como Challenger (Candidato)
+    challenger_model_path = os.path.join(MODELS_DIR, "lstm_model_challenger.pth")
+    torch.save(best_state, challenger_model_path)
+    logger.info(f"Modelo Challenger salvo em: {challenger_model_path}")
     
-    # Salvar metadados dos hiperparâmetros para o predict.py usar
-    config_path = os.path.join(MODELS_DIR, "model_hyperparameters.json")
-    with open(config_path, 'w') as f:
+    # Salvar metadados dos hiperparâmetros do Challenger
+    challenger_config_path = os.path.join(MODELS_DIR, "challenger_hyperparameters.json")
+    with open(challenger_config_path, 'w') as f:
         json.dump(best_params, f)
-    logger.info(f"Configuração salva em: {config_path}")
+
+    # Salvar métricas do Challenger para a DAG comparar com o Champion
+    challenger_metrics_path = os.path.join(MODELS_DIR, "challenger_metrics.json")
+    with open(challenger_metrics_path, 'w') as f:
+        json.dump({"rmse": float(best_rmse)}, f)
+
+    # --- Avaliação Justa do Champion no Novo Dataset ---
+    # Evita "Data Leakage" temporal garantindo que Champion e Challenger sejam comparados na mesma janela de mercado.
+    champion_metrics_path = os.path.join(MODELS_DIR, "champion_metrics.json")
+    champion_model_path = os.path.join(MODELS_DIR, "lstm_model.pth")
+    
+    if os.path.exists(champion_model_path) and os.path.exists(champion_scaler_path):
+        logger.info("Avaliando o Champion no dataset recente para métricas justas e comparáveis...")
+        try:
+            from src.models.predict import Predictor
+            predictor = Predictor()
+            raw_test = df['Close'].values[-120:]
+            predictions, reais = [], []
+            
+            for i in range(60, len(raw_test)):
+                seq = raw_test[i-60:i]
+                predictions.append(predictor.predict_next_day(seq))
+                reais.append(raw_test[i])
+            
+            champion_rmse = np.sqrt(mean_squared_error(reais, predictions))
+            with open(champion_metrics_path, 'w') as f:
+                json.dump({"rmse": float(champion_rmse)}, f)
+            logger.info(f"🏆 Champion reavaliado com novo RMSE da semana: {champion_rmse:.4f}")
+        except Exception as e:
+            logger.error(f"Erro ao reavaliar champion: {e}")
 
 if __name__ == "__main__":
     train()

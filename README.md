@@ -5,18 +5,18 @@ Projeto integrador desenvolvido para o Datathon da Fase 5. Esta aplicação evol
 ## 🌟 Destaques do Projeto
 - **Agente Autônomo (ReAct):** LLM orquestrador (Google Gemma 3) capaz de raciocinar e utilizar 4 ferramentas exclusivas (Calculadora, Busca de Preço em Tempo Real, Previsão LSTM e Busca em Documentos).
 - **Pipeline RAG Local:** Ingestão de relatórios financeiros em PDF e vetorização usando FAISS e embeddings do Google.
-- **Segurança e Governança:** Mapeamento OWASP implementado via Guardrails (Bloqueio de Prompt Injection e mascaramento de PII/CPF).
+- **Segurança e Governança:** Mapeamento OWASP implementado via Guardrails (Bloqueio de Prompt Injection e mascaramento de PIIs como CPF, CNPJ, E-mails e Contas Bancárias).
 - **Avaliação Contínua:** Pipeline automatizado (via Airflow) avaliando a qualidade técnica via **RAGAS** e métricas de negócio (Tom, Concisão e Risco) via um **LLM-as-a-Judge customizado**.
 - **Engenharia de Software:** API FastAPI 100% tipada, dependências gerenciadas via `pyproject.toml` e **cobertura de testes unitários >80%** com `pytest`.
 - **MLOps Nível 2:** Rastreamento de experimentos (MLflow), Observabilidade de LLMs (Langfuse), Monitoramento de Infra (Prometheus/Grafana) e tracking de artefatos de governança (Model Cards e System Cards).
 - **Detecção de Drift Automática (Evidently):** Monitoramento contínuo de estabilidade populacional (PSI) e *Data Drift* entre distribuições de treino e inferência, gerando alertas preditivos de degradação.
 - **Orquestração (Continuous Training com Airflow):** DAG customizada (`datathon_mlops_continuous_training`) executando o seguinte pipeline end-to-end:
   1. **Sincronização da Feature Store:** Ingestão incremental em PostgreSQL canônico e snapshot Parquet derivado para reprodutibilidade.
-  2. **Retreinamento LSTM & Hot-Reload:** Busca de hiperparâmetros (Grid Search), treino, seleção do melhor modelo via MLflow e recarga em memória na API REST em tempo real (zero downtime).
+  2. **Retreinamento LSTM (Champion/Challenger):** Busca de hiperparâmetros (Grid Search), validação justa de RMSE contra o modelo atual em produção e, em caso de vitória, recarga em memória na API REST em tempo real (zero downtime).
   3. **Atualização RAG:** Ingestão e vetorização de novos documentos corporativos no FAISS.
   4. **Avaliação Técnica:** LLM-as-a-Judge rodando framework **RAGAS** (Fidelidade, Relevância, Precisão).
   5. **Avaliação de Negócios:** LLM-as-a-Judge validando métricas de Tom, Concisão e Risco nas respostas.
-- **Governança de Dados (DVC & Synthetic Data):** Utilização do DVC para rastreabilidade de artefatos de dados e geração de dados sintéticos via `Faker` para proteção de PII no ambiente de desenvolvimento local.
+- **Governança e Resiliência (Circuit Breakers):** Fallbacks automáticos para dados sintéticos e proteção massiva contra Rate Limits do Yahoo Finance e falhas do banco de dados (Feature Store).
 - **Análise Exploratória (EDA):** Notebook focado em análise temporal de ativos, justificando arquiteturas de modelagem com base em regimes de volatilidade.
 
 ## 📋 Estrutura
@@ -98,6 +98,17 @@ python load_test.py
 
 ---
 
+## 🩺 Monitoramento e Health Checks (MLOps)
+A API implementa sondas de disponibilidade (Probes) essenciais para orquestradores (como Docker Compose e Kubernetes):
+
+- **`/health` (Liveness Probe):** Verifica se o servidor web (FastAPI) está de pé e respondendo requisições básicas.
+- **`/ready` (Readiness Probe):** Verifica se o modelo de Machine Learning (`Predictor`) e o Agente já foram carregados na memória. Retorna `503 Service Unavailable` caso ainda estejam "aquecendo".
+- **`/metrics`:** Endpoint base do Prometheus expondo métricas de negócio e de requisições HTTP (uso de CPU, tempo de resposta, etc).
+
+*O `docker-compose.yml` está configurado para inspecionar automaticamente a rota `/ready` e só liberar o status de `healthy` ao serviço da API quando o modelo estiver 100% carregado e pronto para realizar inferências.*
+
+---
+
 ## 🧠 Treinamento do Modelo
 Caso queira retreinar o modelo de Deep Learning (LSTM) do zero usando o ambiente configurado no Docker:
 
@@ -120,7 +131,7 @@ A DAG `datathon_mlops_continuous_training` executa:
 
 ### Drift Detection e Retreinamento
 
-A DAG `drift_detection_and_retraining` executa `monitoring/drift.py`, compara dados de referência com dados recentes usando Evidently e salva:
+A DAG `drift_detection_and_retraining` (agendada de Segunda a Quinta-feira para não colidir com o Continuous Training) executa `monitoring/drift.py`, foca exclusivamente na variável estrutural `Close` e salva:
 
 - Relatório HTML em `reports/data_drift_report.html`.
 - Métrica `dataset_drift_detected` e artefato no MLflow.
@@ -158,7 +169,7 @@ Com o ambiente em execução:
 
 ```bash
 docker compose ps
-docker compose exec api pytest tests/
+poetry run pytest tests/
 docker compose exec api python src/models/train.py
 docker compose exec airflow python monitoring/drift.py
 ```
@@ -171,12 +182,13 @@ python -m compileall src monitoring evaluation dags
 
 ## 🧪 Testes e Integração (Guia Rápido)
 
-### Rodando os testes dentro do container (recomendado)
-Subir os serviços com Docker Compose e executar os testes diretamente no container `api` garante que as dependências e serviços externos (Postgres, MLflow, etc.) estejam disponíveis:
+### Rodando os testes localmente (Recomendado para Dev)
+Como a imagem Docker agora é focada em produção (enxuta e segura), as ferramentas de teste não embarcam no contêiner. Para testar localmente com os bancos do Docker rodando em background:
 
 ```bash
-docker compose up -d
-docker compose exec api python -m pytest -q
+docker compose up -d postgres_features postgres_db
+poetry install --with dev
+poetry run pytest tests/ -v
 ```
 
 Se quiser aumentar verbosidade ou rodar com timeout maior:

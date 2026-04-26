@@ -1,18 +1,13 @@
-# Git
-.git
-.gitignore
-
-# Ambientes Virtuais Python
-.venv/
-venv/
-env/
-__pycache__/
-*.pyc
-
-# Artefatos de Machine Learning e Dados locais
+# Diretórios de Dados e Modelos (Evita lentidão absurda no envio de contexto)
+data/
+models/
 mlruns/
-models/*.pth
-data/raw/*
-data/processed/*
 reports/
+
+# Ambientes virtuais e Cache
+venv/
+.venv/
+__pycache__/
 .pytest_cache/
+.git/
+.env

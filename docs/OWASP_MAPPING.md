@@ -11,8 +11,8 @@ Este documento detalha como a API do Agente ReAct (Fase 5) mitiga **5 das princi
 * **Mitigação Implementada:** Nossa API conta com um **Guardrail de Output** (`check_output`). Todas as respostas geradas pelo Agente são analisadas por RegEx antes de chegar ao usuário, mascarando PIIs/CPFs.
 
 ## 3. LLM06: Sensitive Information Disclosure
-* **Ameaça:** O Agente pode memorizar e vazar dados pessoais (PII), como CPFs contidos nos documentos ou injetados acidentalmente.
-* **Mitigação Implementada:** O Guardrail de saída detecta ativamente o padrão matemático de CPFs (`\b\d{3}\.\d{3}\.\d{3}-\d{2}\b`) e mascara os números com asteriscos (`***.***.***-**`) antes de expor a resposta.
+* **Ameaça:** O Agente pode memorizar e vazar dados pessoais, bancários e empresariais (PII/SPI), como CPFs, CNPJs, E-mails e Contas Bancárias contidos nos documentos ou injetados acidentalmente.
+* **Mitigação Implementada:** O Guardrail de saída detecta ativamente padrões através de RegEx (CPFs, CNPJs, E-mails, Agência/Conta) e mascara as informações sensíveis (ex: `[BANK_ACCOUNT:***]`) antes de expor a resposta ao usuário final.
 
 ## 4. LLM07: Insecure Plugin Design
 * **Ameaça:** Ferramentas (Tools) do agente sem validação adequada, permitindo execução de código arbitrário.

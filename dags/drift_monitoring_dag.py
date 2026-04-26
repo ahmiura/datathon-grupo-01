@@ -16,12 +16,13 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-# Esta DAG roda toda sexta-feira às 23:00
+# Esta DAG monitora anomalias no mercado de Segunda a Quinta-feira às 22:00. 
+# (Sexta-feira fica reservada para o Continuous Training na DAG de MLOps).
 with DAG(
     'drift_detection_and_retraining',
     default_args=default_args,
-    description='DAG para detectar Data Drift semanalmente e avaliar retreinamento',
-    schedule_interval='0 23 * * 5',
+    description='DAG para detectar Data Drift no meio da semana para retreinos emergenciais',
+    schedule_interval='0 22 * * 1-4',
     catchup=False,
     tags=['monitoring', 'mlops', 'evidently'],
 ) as dag:

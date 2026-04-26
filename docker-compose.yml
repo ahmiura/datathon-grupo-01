@@ -5,6 +5,12 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     volumes:
       - ./models:/app/models
       - ./mlruns:/app/mlruns

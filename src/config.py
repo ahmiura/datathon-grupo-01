@@ -2,9 +2,9 @@ import os
 
 # Configurações de Dados
 TICKER = "PETR4.SA"
-START_DATE = "2021-01-01"
-END_DATE = "2026-01-31"
-TEST_START_DATE = "2025-01-01"
+START_DATE = "2021-01-01" # Início do histórico de treinamento contínuo
+END_DATE = "2026-01-31" # DEPRECATED: O pipeline MLOps usa datetime.now() dinamicamente.
+TEST_START_DATE = "2025-01-01" # DEPRECATED: Avaliação Champion/Challenger usa os últimos 120 dias em tempo real.
 
 # Hiperparâmetros do Modelo
 TIMESTEPS = 60       # Janela de 60 dias

@@ -5,11 +5,15 @@ WORKDIR /app
 # 1. Copia o arquivo de gerenciamento de dependências
 COPY pyproject.toml .
 
-# Copia o código fonte (Necessário para o build do Poetry/PEP-517)
-COPY . .
+# Cria um diretório fake temporário para instalar as dependências em cache
+RUN mkdir -p src && touch src/__init__.py && touch README.md
 
 # 2. Instala as dependências garantindo a arquitetura correta
-RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -e .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -e .
+
+# 3. Copia o código fonte real (Mudanças no código agora NÃO reinstalam as libs!)
+COPY . .
 
 # Cria diretório de modelos (caso não esteja montado como volume)
 RUN mkdir -p models

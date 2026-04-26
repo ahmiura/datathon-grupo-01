@@ -37,8 +37,14 @@ Retorne APENAS um objeto JSON válido no seguinte formato exato, sem formataçã
 def run_llm_judge(golden_set_path: str, max_samples: int = 3):
     """Executa a avaliação LLM-as-a-judge sobre as respostas geradas no golden set."""
     
-    logger.info("⏳ Aguardando 20 segundos para esfriar o Rate Limit da API após o RAGAS...")
-    time.sleep(20)
+    # Direciona para o arquivo de predições frescas gerado pelo RAGAS nesta rodada da DAG
+    latest_eval_path = "data/golden_set/latest_eval_predictions.json"
+    if os.path.exists(latest_eval_path):
+        logger.info(f"Lendo respostas recém-geradas pela API (Pipeline Contínuo): {latest_eval_path}")
+        golden_set_path = latest_eval_path
+        
+    logger.info("⏳ Aguardando 30 segundos para esfriar o Rate Limit da API após o RAGAS...")
+    time.sleep(30)
     
     logger.info("⚖️ Iniciando avaliação LLM-as-a-judge (Critérios de Negócio)...")
     
@@ -49,7 +55,7 @@ def run_llm_judge(golden_set_path: str, max_samples: int = 3):
     # Em um ambiente corporativo pago, isso rodaria no dataset completo
     sample_data = data[:max_samples]
     
-    model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-2.5-flash")
+    model_name = os.getenv("GEMINI_MODEL_NAME", "gemma-3-27b-it")
     # Temperatura 0.0 é fundamental para o Juiz ser determinístico e justo
     # max_retries evita que o script trave por muito tempo se sofrer block
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.0, max_retries=2) 
