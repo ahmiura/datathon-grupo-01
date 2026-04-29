@@ -96,3 +96,15 @@ flowchart TD
 | Tracking | MLflow | Registrar métricas, parâmetros e artefatos |
 | Drift | Evidently | Detectar mudanças em `Close`, `Volume`, `Returns`, `Volatility` |
 | Observabilidade | Prometheus, Grafana, Langfuse | Métricas de API e traces de LLM |
+
+## Detalhes de Implementação
+
+- **Vector Store (FAISS):** implementado em `data/processed/faiss_index` e carregado por `src/agent/rag_pipeline.py`.
+- **Modelo de Embeddings:** variável de ambiente `GEMINI_EMBEDDING_MODEL` (padrão `models/gemini-embedding-001`).
+- **LLM Orquestrador:** variável de ambiente `GEMINI_MODEL_NAME` (ex.: `gemma-3-27b-it`), usado pelo agente via Google GenAI.
+- **MLflow Tracking:** controlado por `MLFLOW_TRACKING_URI` (no compose aponta para `http://mlflow:5000`); sem variável, o treino usa fallback local `mlruns/`.
+- **Docker Compose (serviços-chave):** `api`, `airflow`, `mlflow`, `postgres_features`, `postgres_db`, `postgres_airflow`, `prometheus`, `grafana`, `loki`.
+- **Health/Readiness:** API expõe `/health`, `/ready` e `/metrics` (Prometheus). O `docker-compose.yml` usa `/ready` como healthcheck.
+- **Observabilidade LLM:** `langfuse` integrado via callback em `src/serving/app.py` para traces do agente.
+- **Drift & Avaliação:** scripts de drift (`monitoring/drift.py`) e avaliação (`evaluation/ragas_eval.py`, `evaluation/llm_judge.py`) são executados pelas DAGs do Airflow.
+

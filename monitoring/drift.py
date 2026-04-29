@@ -43,7 +43,6 @@ def detect_drift():
     ref_df = fetch_financial_data(ticker="PETR4.SA", start=ref_start, end=ref_end)
     
     # Atual: Simula os dados recentes que o modelo está recebendo em Produção
-    # Em um pipeline MLOps Nível 3, isso seria puxado do banco de dados da API (Feature Store / Logs)
     current_df = fetch_financial_data(ticker="PETR4.SA", start=current_start, end=current_end) 
 
     if ref_df.empty or current_df.empty or 'Close' not in ref_df.columns or 'Close' not in current_df.columns:

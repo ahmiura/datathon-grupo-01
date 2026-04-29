@@ -8,7 +8,7 @@ Este documento detalha como a API do Agente ReAct (Fase 5) mitiga **5 das princi
 
 ## 2. LLM02: Insecure Output Handling
 * **Ameaça:** A saída do LLM pode vazar dados confidenciais ou códigos maliciosos que serão executados pelo frontend.
-* **Mitigação Implementada:** Nossa API conta com um **Guardrail de Output** (`check_output`). Todas as respostas geradas pelo Agente são analisadas por RegEx antes de chegar ao usuário, mascarando PIIs/CPFs.
+* **Mitigação Implementada:** Nossa API conta com um **Guardrail de Output** (`check_output`). Todas as respostas geradas pelo Agente são analisadas por RegEx antes de chegar ao usuário, mascarando PIIs (CPFs, CNPJ, E-mails e Conta bancária).
 
 ## 3. LLM06: Sensitive Information Disclosure
 * **Ameaça:** O Agente pode memorizar e vazar dados pessoais, bancários e empresariais (PII/SPI), como CPFs, CNPJs, E-mails e Contas Bancárias contidos nos documentos ou injetados acidentalmente.

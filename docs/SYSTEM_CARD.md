@@ -26,9 +26,9 @@ O sistema utiliza uma arquitetura orquestrada (ReAct) composta pelos seguintes m
 * **Tracking e Observabilidade:** MLflow usa um PostgreSQL próprio (`postgres_db/mlflow_db`) para metadados de experimentos. Métricas e traces adicionais são capturados via `Langfuse`, `Prometheus` e `Grafana`.
 
 ## 4. Limitações e Fatores de Risco
-* **Dependência Externa:** Falhas de conectividade com a API do Yahoo Finance (`yfinance`) ou limites de taxa (Rate Limit) da API do Google GenAI podem impactar a disponibilidade do Agente.
-* **Alucinações (Hallucinations):** Apesar do framework de RAG tentar ater o modelo aos fatos fornecidos, o LLM ainda pode extrapolar ou errar cálculos complexos caso não acione a ferramenta de calculadora apropriadamente.
-* **Viés Temporal (Data Drift):** O modelo LSTM integrado depende fortemente da volatilidade recente. Mudanças abruptas no cenário macroeconômico diminuem a acurácia (RMSE/MAE) das previsões retornadas pela ferramenta.
+* **Dependências Externas e Rate Limits:** O sistema consome APIs de terceiros (Yahoo Finance e Google GenAI). Embora a arquitetura possua mecanismos de resiliência e *Circuit Breakers* (como o cache na Feature Store em PostgreSQL e fallbacks para dados sintéticos), indisponibilidades prolongadas dessas APIs podem atrasar a inferência ou limitar a atualização das cotações em tempo real.
+* **Alucinações (Hallucinations):** Apesar do framework RAG ater o modelo aos fatos recuperados dos documentos (Grounding) e do uso de ferramentas rígidas, o LLM ainda pode extrapolar respostas ou errar lógicas financeiras caso falhe em acionar a calculadora. Esse risco é minimizado e monitorado continuamente pelo pipeline de avaliação automatizado (RAGAS).
+* **Viés Temporal (Data Drift):** O modelo LSTM integrado é sensível a quebras estruturais e volatilidade atípica do mercado. Para mitigar o impacto de mudanças macroeconômicas na acurácia (RMSE/MAE), o sistema conta com uma DAG de *Drift Detection* (via Evidently) que monitora a distribuição dos dados e aciona o retreinamento (Continuous Training) automaticamente quando necessário.
 
 ## 5. Medidas de Segurança, Privacidade e Guardrails (OWASP)
 Para mitigar riscos comuns em aplicações com LLMs, este sistema implementa:
@@ -44,4 +44,4 @@ A qualidade das respostas do Agente é auditada periodicamente através do frame
 * **Context Precision (Precisão do Contexto):** Avalia se a ferramenta de busca (FAISS) priorizou as passagens corretas.
 * **Context Recall (Abrangência):** Mede se nenhuma informação crucial para a resposta foi esquecida no processo de busca.
 
-> *Nota:* A execução do pipeline de testes garante cobertura superior a 80% do código fonte base da aplicação.
+> *Nota:* A execução do pipeline de testes garante cobertura superior a 60% do código fonte base da aplicação.
