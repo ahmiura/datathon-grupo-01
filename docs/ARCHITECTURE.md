@@ -94,7 +94,7 @@ flowchart TD
 | Avaliação técnica | RAGAS | Medir fidelidade, relevância e recuperação de contexto |
 | Avaliação de negócio | LLM-as-a-Judge | Medir tom, concisão e alinhamento à política de risco |
 | Tracking | MLflow | Registrar métricas, parâmetros e artefatos |
-| Drift | Evidently | Detectar mudanças em `Close`, `Volume`, `Returns`, `Volatility` |
+| Drift | Evidently | Detectar mudanças em `Close` |
 | Observabilidade | Prometheus, Grafana, Langfuse | Métricas de API e traces de LLM |
 
 ## Detalhes de Implementação

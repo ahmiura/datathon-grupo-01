@@ -163,11 +163,13 @@ def train() -> None:
         df = df[['Close']]
         
     # --- Circuit Breaker para o Treinamento (Rate Limit Fallback) ---
+    is_synthetic = False
     if df is None or len(df) < 100:
         logger.warning("Yahoo Finance bloqueou a requisição (Rate Limit). Ativando dados sintéticos para manter a DAG rodando...")
         # Garante que os dados sintéticos terminem no dia atual para refletir o cenário recente
         dates = pd.date_range(end=current_date, periods=500, freq='B')
         df = pd.DataFrame({'Close': np.linspace(20, 40, 500) + np.random.normal(0, 2, 500)}, index=dates)
+        is_synthetic = True
         
     # Materializa o snapshot do DVC/Parquet APENAS quando temos certeza de que os dados são válidos e saudáveis
     materialize_feature_store_snapshot(TICKER, START_DATE, current_date, df=df)
@@ -238,6 +240,11 @@ def train() -> None:
     challenger_config_path = os.path.join(MODELS_DIR, "challenger_hyperparameters.json")
     with open(challenger_config_path, 'w') as f:
         json.dump(best_params, f)
+
+    # --- Trava de Segurança MLOps ---
+    if is_synthetic:
+        logger.warning("🛡️ Circuit Breaker: Dados sintéticos detectados. Forçando RMSE do Challenger ao infinito para garantir reprovação.")
+        best_rmse = float('inf')
 
     # Salvar métricas do Challenger para a DAG comparar com o Champion
     challenger_metrics_path = os.path.join(MODELS_DIR, "challenger_metrics.json")
