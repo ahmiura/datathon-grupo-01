@@ -16,4 +16,4 @@ Para fins de observabilidade operacional e cálculo de métricas RAGAS, o sistem
 * O processamento e vetorização de documentos internos (RAG) no FAISS é estritamente limitado a relatórios públicos financeiros (B3) ou corporativos não-pessoais.
 
 ## 4. Direito ao Esquecimento
-Por ser uma arquitetura que não retém memória persistente do usuário entre sessões (sem banco de sessões), o direito ao apagamento é garantido nativamente pelo ciclo de vida efêmero dos containers Docker da aplicação.
+Por ser uma arquitetura que não retém memória persistente do usuário entre sessões (sem banco de sessões), a deleção dos dados são garantido nativamente pelo ciclo de vida efêmero dos containers Docker da aplicação.

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 # Lista de palavras-chave usadas em ataques de Prompt Injection ou fora de escopo
 BLOCKED_KEYWORDS = ["ignore", "esqueça tudo", "você é um", "hack", "system prompt", "piada", "receita", "poema"]
 
-# Padrões para detecção de PII comuns no contexto brasileiro
+# Padrões para detecção de dados sensíveis (PII)
 CPF_PATTERN = re.compile(r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b")
 CNPJ_PATTERN = re.compile(r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b")
 EMAIL_PATTERN = re.compile(r"[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}")

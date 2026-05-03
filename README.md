@@ -7,7 +7,7 @@ Projeto integrador desenvolvido para o Datathon da Fase 5. Esta aplicação evol
 - **Pipeline RAG Local:** Ingestão de relatórios financeiros em PDF e vetorização usando FAISS e embeddings do Google.
 - **Segurança e Governança:** Mapeamento OWASP implementado via Guardrails (Bloqueio de Prompt Injection e mascaramento de PIIs como CPF, CNPJ, E-mails e Contas Bancárias).
 - **Avaliação Contínua:** Pipeline automatizado (via Airflow) avaliando a qualidade técnica via **RAGAS** e métricas de negócio (Tom, Concisão e Risco) via um **LLM-as-a-Judge customizado**.
-- **Engenharia de Software:** API FastAPI 100% tipada, dependências gerenciadas via `pyproject.toml` e **cobertura de testes unitários >80%** com `pytest`.
+- **Engenharia de Software:** API FastAPI 100% tipada, dependências gerenciadas via `pyproject.toml` e **cobertura de testes unitários >60%** com `pytest`.
 - **MLOps Nível 2:** Rastreamento de experimentos (MLflow), Observabilidade de LLMs (Langfuse), Monitoramento de Infra (Prometheus/Grafana) e tracking de artefatos de governança (Model Cards e System Cards).
 - **Detecção de Drift Automática (Evidently):** Monitoramento contínuo de estabilidade populacional (PSI) e *Data Drift* entre distribuições de treino e inferência, gerando alertas preditivos de degradação.
 - **Orquestração (Continuous Training com Airflow):** DAG customizada (`datathon_mlops_continuous_training`) executando o seguinte pipeline end-to-end:
@@ -42,6 +42,8 @@ O `docker-compose.yml` separa os bancos por responsabilidade:
 - `api`: API FastAPI em `http://localhost:8000`.
 - `airflow`: DAGs de treinamento, avaliação e drift em `http://localhost:8080`.
 - `prometheus`, `grafana` e `loki`: observabilidade de infraestrutura e aplicação.
+
+![Arquiteturao do projeto](docs/Arq_datathon-Arquitetura.drawio.svg)
 
 ## 🚀 Como Rodar
 

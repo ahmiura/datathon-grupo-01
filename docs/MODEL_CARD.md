@@ -16,7 +16,7 @@ Este Model Card fornece os detalhes técnicos, dados de treinamento, métricas d
   * Simulações e estudos de tendências financeiras.
   * Respostas conversacionais com ressalva de que se trata de uma previsão orientada por IA.
 * **Casos de Uso Fora de Escopo:** 
-  * Operações de *High-Frequency Trading (HFT)* automatizadas.
+  * Operações de Tradings
   * Aconselhamento de investimentos garantidos sem supervisão humana.
 
 ## 3. Dados de Treinamento e Avaliação
