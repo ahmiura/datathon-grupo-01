@@ -43,6 +43,8 @@ O `docker-compose.yml` separa os bancos por responsabilidade:
 - `airflow`: DAGs de treinamento, avaliação e drift em `http://localhost:8080`.
 - `prometheus`, `grafana` e `loki`: observabilidade de infraestrutura e aplicação.
 
+![Arquiteturao do projeto](docs/Arq_datathon-Arquitetura.drawio.svg)
+
 ## 🚀 Como Rodar
 
 ### Pré-requisitos
